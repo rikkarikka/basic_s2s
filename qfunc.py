@@ -45,21 +45,25 @@ class qFunc():
     
     def qA2Bfunc(self, QM, M, probs,hx):
         if self.args.scorewholevocab:
-            tmpwi = [] 
-            for kk in range(probs.size(0)): # vocabsize? check in other notebook replace with probs.size(1)
+           tmpwi=[] 
+           for kk in range(probs.size(0)): # vocabsize? check in other notebook replace with probs.size(1)
                 dem = M.decemb(Variable(torch.cuda.LongTensor(1).fill_(kk).view(1,1)))
                 h1 = torch.cat([hx[0],hx[1]],dim=-1)
                 inp = torch.cat([h1,dem.squeeze(0)],dim=-1)
                 predsc = QM(inp)
-                tmpwi.append(predsc)            
+                tmpwi.append(predsc)
+           probs = probs + torch.stack(tmpwi,dim=-1).squeeze()*0.1
+           vals, pidx = probs.topk(self.args.beamsize*2,0)
+           return vals,pidx            
         else:
-            raise NotImplementedError
-            
-            probs = probs + torch.stack(tmpwi,dim=-1).squeeze()*0.1
-        vals, pidx = probs.topk(self.args.beamsize*2,0)
-        
-        return vals, pidx
-        
+            vals, pidx = probs.topk(self.args.beamsize*2,0)
+            for k in range(len(pidx)):
+                dem = M.decemb(pidx[k].view(1,1))
+                h1 = torch.cat([hx[0],hx[1]],dim=-1)
+                inp = torch.cat([h1,dem.squeeze(0)],dim=-1)
+                predsc = QM(inp)
+                vals[k] = vals[k] + 0.1*predsc
+            return vals,pidx           
     
     def qKLdivfunc(self, QM, beam, probs):
         if self.args.scorewholevocab:

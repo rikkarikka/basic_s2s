@@ -41,7 +41,7 @@ class Beam():
         op, (hx,cx) = M.decode_step(prev[j], ops[j].squeeze(1), enc, h[j], c[j])
         op2 = M.gen(op)
         op2 = op2.squeeze()
-        probs = F.log_softmax(op2)
+        probs = F.log_softmax(op2,dim=-1)
         vals = 0
         pidx = 0
         if self.args.scoreqfunc: ## and sampling condition aswell?
