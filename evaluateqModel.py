@@ -50,7 +50,9 @@ def testQmodel(args,epoch=0):
         hyps.append(hyp)
         refs.append(targets)
     bleu = corpus_bleu(refs,hyps,emulate_multibleu=True,smoothing_function=cc.method3)
-    with open(args.savestr+str(epoch)+"_hyps_"+args.qfntype,'w') as f:
+    sv=args.savestr+"_hyps_"+args.qfntype
+    print("saving in",sv)
+    with open(sv,'w') as f:
         hyps = [' '.join(x) for x in hyps]
         f.write('\n'.join(hyps))
     try:
@@ -66,5 +68,6 @@ def testQmodel(args,epoch=0):
    
 if __name__ == "__main__":
     args = qMargs()
+    os.environ["CUDA_VISIBLE_DEVICES"]=args.gpu
     bleu = testQmodel(args)
     print("bleu is", bleu)
