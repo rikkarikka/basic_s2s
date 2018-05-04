@@ -50,8 +50,7 @@ class Beam():
             qf = qFunc(self.args)
             vals, pidx = qf.scoreqfunc(QM, M, beam, probs, goldL, op, hx, cx)
         else:
-            asd
-            vals, pidx = probs.topk(self.beamsize*2,0)
+            vals, pidx = probs.topk(self.args.beamsize*2,0)
         vals = vals.squeeze()
         pidx = pidx.squeeze()
         donectr = 0

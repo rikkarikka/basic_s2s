@@ -50,7 +50,10 @@ def testQmodel(args,epoch=0):
         hyps.append(hyp)
         refs.append(targets)
     bleu = corpus_bleu(refs,hyps,emulate_multibleu=True,smoothing_function=cc.method3)
-    sv=args.savestr+"_hyps_"+args.qfntype
+    if args.scoreqfunc:
+        sv=args.savestr+"hyps_"+args.qfntype
+    else:
+        sv=args.savestr+"hyps_"+"seq2seq"
     print("saving in",sv)
     with open(sv,'w') as f:
         hyps = [' '.join(x) for x in hyps]
