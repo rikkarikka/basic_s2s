@@ -62,7 +62,7 @@ class qFunc():
                 h1 = torch.cat([hx[0],hx[1]],dim=-1)
                 inp = torch.cat([h1,dem.squeeze(0)],dim=-1)
                 predsc = QM(inp)
-                vals[k] = vals[k] + 0.1*predsc
+                vals[k] = vals[k] - 0.01*predsc
             return vals,pidx           
     
     def qKLdivfunc(self, QM, beam, probs):

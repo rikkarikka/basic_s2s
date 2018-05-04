@@ -55,5 +55,6 @@ def main(args):
     
 if __name__=="__main__":
     args = qMargs()
+    os.environ["CUDA_VISIBLE_DEVICES"]=args.gpu
     main(args)
   
