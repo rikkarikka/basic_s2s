@@ -21,6 +21,7 @@ def general():
     parser.add_argument('-train',type=str,default="data/train.txt")
     parser.add_argument('-valid',type=str,default="data/valid.txt")
     parser.add_argument('-cuda',type=s2bool,default=True)
+    parser.add_argument('-gpu',type=str,default="0")
     return parser
 
 def mkdir(args):

@@ -40,12 +40,13 @@ class qFunc():
                 temp_pred,_ = predlen.squeeze().topk(1)
                 #for regre - -0.7*abs(goldL-predlen.data[0][0])**2
                 lenscore = val_pred[goldL].data[0]
-                vals[k] = vals[k] - lenscore                
+                vals[k] = vals[k] + 3*lenscore                
             return vals, pidx
     
-    def qA2Bfunc(self, QM, M, probs):
+    def qA2Bfunc(self, QM, M, probs,hx):
         if self.args.scorewholevocab:
-            for kk in range(op2.size(0)): # vocabsize? check in other notebook replace with probs.size(1)
+            tmpwi = [] 
+            for kk in range(probs.size(0)): # vocabsize? check in other notebook replace with probs.size(1)
                 dem = M.decemb(Variable(torch.cuda.LongTensor(1).fill_(kk).view(1,1)))
                 h1 = torch.cat([hx[0],hx[1]],dim=-1)
                 inp = torch.cat([h1,dem.squeeze(0)],dim=-1)
@@ -77,7 +78,7 @@ class qFunc():
         if self.qfntype == "qlen":
             vals,pidx = self.qlenfunc(QM,M,probs,goldL,op,hx,cx)
         elif self.qfntype == "qA2B":
-            vals,pidx = self.qA2Bfunc(QM,M,probs) 
+            vals,pidx = self.qA2Bfunc(QM,M,probs,hx) 
         elif self.qfntype == "qRVAE":
             vals,pidx = self.qKLdivfunc(QM,beam,probs)
         else:
