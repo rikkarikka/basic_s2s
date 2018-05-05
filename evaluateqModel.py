@@ -12,6 +12,7 @@ from Beam import Beam
 from arguments import qMargs
 from qmodelDefs import *
 from s2s_bland import *
+from qfunc import qFunc
 
 ## basically validate function from s2s_bland.py
 
@@ -22,7 +23,12 @@ def testQmodel(args,epoch=0):
     print(args.valid)
     print("source_vocab_size",DS.svsz)
     print("target_vocab_size",DS.vsz)
-    QM, _ = torch.load(args.qevaluate)
+    QM, _ = torch.load(args.qMtoeval)
+    if args.qfntype == "qRVAE" or args.qfntype == "qMMI" :
+        QM.enc.flatten_parameters()
+        QM.dec.flatten_parameters()
+        QM.endtok = DS.vocab.index("<eos>")
+        QM.punct = [DS.vocab.index(t) for t in ['.','!','?'] if t in DS.vocab]
     M, _ = torch.load(args.fwdseq2seqModel)
     M.enc.flatten_parameters()
     M.dec.flatten_parameters()
@@ -37,6 +43,9 @@ def testQmodel(args,epoch=0):
     hyps = []
     curpos = 0
     goldL=50
+    print("loaded models")
+    print(M)
+    print(QM)
     for sources, targets in data:
         curpos+=1
         if curpos%50==0:
@@ -45,14 +54,24 @@ def testQmodel(args,epoch=0):
         #logits = M(sources,None)
         #logits = torch.max(logits.data.cpu(),2)[1]
         #logits = [list(x) for x in logits]
-        done, donescores = beam.beamsearch(sources, M, QM,len(targets[0]))
+        done, donescores = beam.beamsearch(sources, M, QM, len(targets[0]))
+        
+        if args.rerankqfunc:
+            qf = qFunc(args)
+            donescores = qf.rerankqfunc(QM, M, sources, done, donescores) #donescores returned after rescoring
+        
         topscore =  donescores.index(max(donescores))
         logits = done[topscore]
-        hyp = [DS.vocab[x] for x in logits]
+        try:
+            hyp = [DS.vocab[x] if x < len(DS.vocab) else DS.vocab[2] for x in logits]
+        except:
+            print(logits)
+            print("somthing's wrong")
+            asd
         hyps.append(hyp)
         refs.append(targets)
     bleu = corpus_bleu(refs,hyps,emulate_multibleu=True,smoothing_function=cc.method3)
-    if args.scoreqfunc:
+    if args.scoreqfunc or args.rerankqfunc:
         sv=args.savestr+"hyps_"+args.qfntype
     else:
         sv=args.savestr+"hyps_"+"seq2seq"

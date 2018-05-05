@@ -44,17 +44,19 @@ class QlenModel(nn.Module):
         self.clfout = nn.Linear(args.hsz*3,args.maxlen,bias=False)
     
     def forward(self, inp):
-      #input is new hidden output value for current input
-      inter = self.drop(self.tanh(self.linin(inp)))
-      inter = self.drop(self.tanh(self.lin(inter)))
-      inter = self.drop(self.tanh(self.lin(inter)))
-      inter = self.drop(self.tanh(self.lin(inter)))
-      #inter = self.drop(self.lin(inter))
-        
-      #pred = self.relu(self.regrout(inter))#self.relu
-      pred = self.clfout(inter)
-      return pred
+        #input is new hidden output value for current input
+        inter = self.drop(self.tanh(self.linin(inp)))
+        inter = self.drop(self.tanh(self.lin(inter)))
+        inter = self.drop(self.tanh(self.lin(inter)))
+        inter = self.drop(self.tanh(self.lin(inter)))
+        #inter = self.drop(self.lin(inter))
 
+        #pred = self.relu(self.regrout(inter))#self.relu
+        pred = self.clfout(inter)
+        return pred
+
+
+# combine RVAAE and CRVAE model
 class RVAEModel(nn.Module):
     def __init__(self,args):
         super().__init__()
@@ -144,18 +146,24 @@ class RVAEModel(nn.Module):
         
     
     def getKLdiv(self,inp):
-        enc, h = self.encoder(inp, self.args)
+        enc, h = self.encoder(inp)
         
         mu = self.to_mu(h)    
-        logvar = self.to_logvar(context)    
-        std = t.exp(0.5 * logvar)
+        logvar = self.to_logvar(h)    
+        std = torch.exp(0.5 * logvar)
 
         # reparametrization
+        # read bowman paper again, optimize this
         z = Variable(torch.randn([inp.size(0), self.args.hsz]))
         #if use_cuda:
         z = z.cuda()
         z = z * std + mu
 
         kld = (-0.5 * torch.sum(logvar - torch.pow(mu, 2) - torch.exp(logvar) + 1, 1)).mean().squeeze()
-        
         return kld
+    
+class CRVAEModel(nn.Module):
+    def __init__(self,args):
+        super().__init__()
+
+        

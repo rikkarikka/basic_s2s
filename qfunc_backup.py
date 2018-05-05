@@ -17,114 +17,98 @@ class qFunc():
         self.args = args
         self.qfntype = args.qfntype
         
-    def qlenfunc(self, pidx, QM, M, probs, goldL=None,op=None,hx=None,cx=None):
-        if self.args.scorewholevocab:
-            print("wha..GTFO")
-            raise NotImplementedError
-        else:
-            dem = M.decemb(pidx.view(1,1))
-            decin = torch.cat((dem.squeeze(1),op.squeeze(1)),1).unsqueeze(1)
-            decout, (h1,c1) = M.dec(decin,(hx,cx))
-            h1 = torch.cat([h1[0],h1[1]],dim=-1)
-            predlen = QM(h1)
-            predlen = F.log_softmax(predlen,dim=-1)
-            val_pred = predlen.squeeze()#.topk(2) ,idx_pred
-            temp_pred,_ = predlen.squeeze().topk(1)
-            #for regre - -0.7*abs(goldL-predlen.data[0][0])**2
-            lenscore = val_pred[goldL].data[0]
-            return lenscore
-    
-    def qA2Bfunc(self, pidx, QM, M, probs,hx):
-        if self.args.scorewholevocab:
-            dem = M.decemb(Variable(torch.cuda.LongTensor(1).fill_(pidx).view(1,1)))
-            h1 = torch.cat([hx[0],hx[1]],dim=-1)
-            inp = torch.cat([h1,dem.squeeze(0)],dim=-1)
-            predsc = QM(inp)
-            return predsc            
-        else:
-            dem = M.decemb(pidx.view(1,1))
-            h1 = torch.cat([hx[0],hx[1]],dim=-1)
-            inp = torch.cat([h1,dem.squeeze(0)],dim=-1)
-            predsc = QM(inp)
-            return predsc 
-    
-    def qKLdivfunc(self, pidx, QM, beam, probs):
-        if self.args.scorewholevocab:
-            print("wha..GTFO")
-            raise NotImplementedError
-        else:
-            if beam !=[]:
-                beam.append(pidx.data[0])
-                tempseq = Variable(torch.cuda.LongTensor(beam)) #evaluate KLdiv of each beam and predicted next word, choose word with lowest KL div 
-            else:
-                tempseq = pidx
-            klscore = QM.getKLdiv(tempseq.unsqueeze(0))
-            return klscore
-
-    def qMMIfunc(self, M_MMI, M, A1, Blist, MB_scores): # M_MMI means seqseq(A1|B)
-        newscores = []
-        for B,MB_score in zip(Blist,MB_scores):
-            inp=Variable(torch.cuda.LongTensor(B)).view(1,-1)
-            ## teacher force here?
-            logits, _, _ = M_MMI(inp,A1)
-            logits = logits.squeeze(0)
-            logits = F.log_softmax(logits,dim=-1)
-            tt = 0
-            A1len = logits.size(0)
-            vcz = logits.size(1)
-            for k in range(A1len):
-                j = A1.data[0][k] 
-                if j < vcz: #check if indices in vocab else assign unk
-                    tt+=logits[k][j].data[0]
-                else:
-                    tt+=logits[k][2].data[0]
-            tt=tt/A1len
-            newscores.append(tt+MB_score)
-        return newscores
-
-    def scoreqfunc(self, QM, M, beam, probs, goldL=None, op=None, hx=None, cx=None):
+    def qlenfunc(self, QM, M, probs, goldL=None,op=None,hx=None,cx=None):
         if goldL is None:
-            self.args.maxlen #?? or random number between a and b inside for loop ?
-
-        if self.args.scorewholevocab:
-            tmpwi=[]
-            for kk in range(probs.size(0)): # vocabsize? check in other notebook replace with probs.size(1)
-                tempscore = 0
-                if "qlen" in self.args.qfnstoscore:
-                    tempscore+=0 #still need to implement
-                if "qA2B" in self.args.qfnstoscore:
-                    tempscore+=self.qA2Bfunc(self, pidx, QM, M, probs,hx)*0.01
-                if "qRVAE" in self.args.qfnstoscore:            
-                    tempscore+=0 #still need to implement
-                tmpwi.append(tempscore)
-            probs = probs + torch.stack(tmpwi,dim=-1).squeeze()*0.1
-            vals, pidx = probs.topk(self.args.beamsize*2,0)
-            return vals,pidx
+            self.args.maxlen #?? or random number between a and b
         
+        if self.args.scorewholevocab:
+            print("wha..GTFO")
+            raise NotImplementedError
         else:
             vals, pidx = probs.topk(self.args.beamsize*2,0)
             for k in range(len(pidx)):
-                tempscore = 0
-                if "qlen" in self.args.qfnstoscore:
-                    tempscore+=self.qlenfunc(pidx[k], QM, M, probs, goldL, op, hx, cx) * 0.01                
-                if "qA2B" in self.args.qfnstoscore:
-                    tempscore+=self.qA2Bfunc(pidx[k], QM, M, probs,hx) * 0.01                    
-                if "qRVAE" in self.args.qfnstoscore:
-                    tempscore+=self.qKLdivfunc(pidx[k], QM, beam, probs) * 0.01                
-                vals[k] = vals[k] + tempscore
+                #*** need to finish this***
+                #or can we do it here, pass pidx through decoder, get hnew, pass through QM
+                dem = M.decemb(pidx[k].view(1,1))
+                decin = torch.cat((dem.squeeze(1),op.squeeze(1)),1).unsqueeze(1)
+                decout, (h1,c1) = M.dec(decin,(hx,cx))
+                h1 = torch.cat([h1[0],h1[1]],dim=-1)
+                predlen = QM(h1)
+                predlen = F.log_softmax(predlen,dim=-1)
+                val_pred = predlen.squeeze()#.topk(2) ,idx_pred
+                temp_pred,_ = predlen.squeeze().topk(1)
+                #for regre - -0.7*abs(goldL-predlen.data[0][0])**2
+                lenscore = val_pred[goldL].data[0]
+                vals[k] = vals[k] + 5*lenscore                
             return vals, pidx
-   
-    def rerankqfunc(self, QM, M, source, inlist, scores): #source==A1
-        #tempscores = 
-        if "qMMI" in self.args.qfnstoscore:
-            #do this when other types of reranking implemented, use elementwise list addition techniques
-            #scores += self.qMMIfunc(self,M_MMI,M,inlist,scores)# need to add lists here
-            newscores = self.qMMIfunc(QM, M, source, inlist, scores)
-            return newscores
+    
+    def qA2Bfunc(self, QM, M, probs,hx):
+        if self.args.scorewholevocab:
+            tmpwi=[] 
+            for kk in range(probs.size(0)): # vocabsize? check in other notebook replace with probs.size(1)
+                dem = M.decemb(Variable(torch.cuda.LongTensor(1).fill_(kk).view(1,1)))
+                h1 = torch.cat([hx[0],hx[1]],dim=-1)
+                inp = torch.cat([h1,dem.squeeze(0)],dim=-1)
+                predsc = QM(inp)
+                tmpwi.append(predsc)
+            probs = probs + torch.stack(tmpwi,dim=-1).squeeze()*0.1
+            vals, pidx = probs.topk(self.args.beamsize*2,0)
+            return vals,pidx            
         else:
+            vals, pidx = probs.topk(self.args.beamsize*2,0)
+            for k in range(len(pidx)):
+                dem = M.decemb(pidx[k].view(1,1))
+                h1 = torch.cat([hx[0],hx[1]],dim=-1)
+                inp = torch.cat([h1,dem.squeeze(0)],dim=-1)
+                predsc = QM(inp)
+                vals[k] = vals[k] - 0.1*predsc
+            return vals,pidx           
+    
+    def qKLdivfunc(self, QM, beam, probs):
+        if self.args.scorewholevocab:
             raise NotImplementedError
-"""         
-        was in scoreqfunc
+        else:
+            vals, pidx = probs.topk(self.args.beamsize*2,0)
+            for k in range(len(pidx)):
+                if beam !=[]:
+                    beam.append(pidx[k].data[0])
+                    tempseq = Variable(torch.cuda.LongTensor(beam)) #evaluate KLdiv of each beam and predicted next word, choose word with lowest KL div 
+                else:
+                    tempseq = pidx[k]
+                klscore = QM.getKLdiv(tempseq.unsqueeze(0))
+                vals[k] = vals[k] + klscore
+            return vals, pidx
+    
+    
+    
+    
+    
+    
+    
+    def qMMIfunc(self,M_MMI,M,Blist,MB_scores) # M_MMI means seqseq(A1|B)
+        
+    
+    def scoreqfunc(self, QM, M, beam, probs, goldL=None, op=None, hx=None, cx=None):
+        
+        if self.args.scorewholevocab:
+            raise NotImplementedError
+        else:
+            vals, pidx = probs.topk(self.args.beamsize*2,0)
+            tempscore = 0
+            for k in range(len(pidx)):
+                if "qlen" in self.args.qfnstoscore:
+                
+                if "qA2B" in self.args.qfnstoscore:
+                    
+                if "qRVAE" in self.args.qfnstoscore:
+                    
+                       
+        
+        
+        
+        
+        
+        
         if self.qfntype == "qlen":
             vals,pidx = self.qlenfunc(QM,M,probs,goldL,op,hx,cx)
         elif self.qfntype == "qA2B":
@@ -134,8 +118,10 @@ class qFunc():
         else:
             raise ("unknown qtype:") #change this
         return vals,pidx
-""" 
-            
+    
+    def rerankqfunc(self,QM, M, inlist, scores):
+        if self.qfntype ==
+
 class qModelTrainVal():
     def __init__(self,args):
         super().__init__()

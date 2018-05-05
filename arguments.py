@@ -49,7 +49,6 @@ def qMargs():
     parser.add_argument('-datafile', type=str, default="data_opensub/opensub_fwd.pt")
     parser.add_argument('-qdatafile', type=str, default="data_opensub/opensub_fwd.pt")
     parser.add_argument('-savestr',type=str,default="saved_models/bland_opensub/")
-    parser.add_argument('-qsavestr',type=str,default="saved_models/bland_opensub/")
     parser.add_argument('-beamsize', type=int, default=4, help='min_freq for vocab [default: 1]') #
     parser.add_argument('-vmodel',type=str, default=None)    
     parser.add_argument('-qfntype', type=str,default="qlen") # options are qlen, qA2B, qRVAE future - qCRVAE, qAdver
@@ -59,9 +58,11 @@ def qMargs():
     parser.add_argument('-saveqMstr', type=str,default="saved_models/bland_opensub/")
     parser.add_argument('-qepochs', type=int, default=20)
     parser.add_argument('-qresume', type=str, default="saved_models/bland_opensub/30QM")
-    parser.add_argument('-qevaluate', type=str, default="saved_models/bland_opensub/30QM")
+    parser.add_argument('-qMtoeval', type=str, default="saved_models/bland_opensub/30QM")
     parser.add_argument('-scorewholevocab', type=s2bool, default=False)
     parser.add_argument('-scoreqfunc', type=s2bool, default=False)
+    parser.add_argument('-rerankqfunc',type=s2bool, default=False)
+    parser.add_argument('-qfnstoscore', type=str, nargs='*',default=["qlen"])
     parser.add_argument('-qlr', type=float, default=0.001, help='initial learning rate [default: 0.001]')
     args = parser.parse_args()
     mkdir(args)

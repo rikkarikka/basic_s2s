@@ -49,6 +49,8 @@ class model(nn.Module):
     donescores = []
     for i in range(self.args.maxlen):
       tmp = []
+      if len(beam) == 0:
+        break
       for j in range(len(beam)):
         dembedding = self.decemb(prev[j].view(1,1))
         decin = torch.cat((dembedding.squeeze(1),ops[j].squeeze(1)),1).unsqueeze(1)

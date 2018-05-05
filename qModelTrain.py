@@ -50,7 +50,7 @@ def main(args):
 
     print(QM)
     print(args.qdatafile)
-    print(args.qsavestr)    
+    print(args.saveqMstr)    
     print("training qModel")
     trainer = qModelTrainVal(args)
     trainer.qModelTrainer(QM, Qoptimizer, DS)

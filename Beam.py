@@ -68,7 +68,7 @@ class Beam():
             #    tmp.append((vals[k].data[0]+scores[j],pidx[k],j,hx,cx,op))
             #    donectr+=1
             #else:
-            tmp.append((vals[k].data[0],pidx[k],j,hx,cx,op))
+            tmp.append((vals[k].data[0]+scores[j],pidx[k],j,hx,cx,op)) # had forgot to add scores[j] experiment the effect of not adding it
             donectr+=1
         #for k in range(self.beamsize):
         #  tmp.append((vals[k].data[0]+scores[j],pidx[k],j,hx,cx,op))

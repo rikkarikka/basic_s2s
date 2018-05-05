@@ -9,12 +9,12 @@ class load_data:
     train_sources,train_targets = self.ds(args.train)
     train_targets = [x[0] for x in train_targets]
     ctr = Counter([x for z in train_targets for x in z])
-    thresh = 3
-    self.vocab = ["<pad>","<eos>","<unk>","<start>"]+[x for x in ctr if ctr[x]>thresh]
+    thresh = 0
+    self.vocab = ["<pad>","<eos>","<unk>","<start>"]+[x for x in ctr if ctr[x]>thresh and x != "<unk>"]
     self.vsz = len(self.vocab)
     ctr = Counter([x for z in train_sources for x in z])
-    thresh = 1
-    self.itos = ["<pad>","<eos>","<unk>","<start>"]+[x for x in ctr if ctr[x]>thresh]
+    thresh = 0
+    self.itos = ["<pad>","<eos>","<unk>","<start>"]+[x for x in ctr if ctr[x]>thresh and x != "<unk>"]
     self.stoi = {x:i for i,x in enumerate(self.itos)}
     self.svsz = len(self.itos)
     self.train = list(zip(train_sources,train_targets))
@@ -32,15 +32,18 @@ class load_data:
       siz = len(data[self.bctr][0])
       k = 0
       srcs,tgts = [],[]
+      srclen, tgtlen = [],[]
       while k<self.bsz and self.bctr+k<self.dsz:
         src,tgt = data[self.bctr+k]
         if len(src)<siz:
           break
         srcs.append(src)
         tgts.append(tgt)
+        srclen.append(len(src))
+        tgtlen.append(len(tgt))
         k+=1
       self.bctr+=k
-    return self.pad_batch((srcs,tgts))
+    return self.pad_batch((srcs,tgts)), srclen, tgtlen
 
   def new_data(self,fn,targ=False):
     src,tgt = self.ds(fn)
