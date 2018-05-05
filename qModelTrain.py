@@ -13,7 +13,7 @@ from qfunc import qModelTrainVal
 # need trained seq2seqModel
 from arguments import qMargs
 from qmodelDefs import *
-from tempseq2seq import *
+from s2s_bland import *
 
 def main(args):
     # raise errors by checking if proper datafiles assigned. eg. A2B needs 3 file and qlen needs 2 file

@@ -9,7 +9,7 @@ from torch.autograd import Variable
 from preprocess_src2_inclusive import load_data3
 from preprocess_new import load_data
 from qmodelDefs import *
-from tempseq2seq import *
+from s2s_bland import *
 
 class qFunc():
     

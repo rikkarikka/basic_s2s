@@ -11,7 +11,7 @@ from preprocess_new import load_data
 from Beam import Beam
 from arguments import qMargs
 from qmodelDefs import *
-from tempseq2seq import *
+from s2s_bland import *
 
 ## basically validate function from s2s_bland.py
 
