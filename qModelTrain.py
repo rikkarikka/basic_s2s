@@ -20,6 +20,8 @@ def main(args):
     DS = torch.load(args.datafile)
     args.vsz = DS.vsz
     args.svsz = DS.svsz
+    print("source_vocab_size",DS.svsz)
+    print("target_vocab_size",DS.vsz)
     if args.debug:
         args.bsz=2
         DS.train = DS.train[:2]

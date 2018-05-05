@@ -24,7 +24,7 @@ class model(nn.Module):
 
     # attention stuff
     self.linin = nn.Linear(args.hsz,args.hsz,bias=False)
-    self.sm = nn.Softmax(dim=-1)
+    self.sm = nn.Softmax()
     self.linout = nn.Linear(args.hsz*2,args.hsz,bias=False)
     self.tanh = nn.Tanh()
     self.drop = nn.Dropout(args.drop)
@@ -65,7 +65,7 @@ class model(nn.Module):
       
         op2 = self.gen(op)
         op2 = op2.squeeze()
-        probs = F.log_softmax(op2,dim=-1)
+        probs = F.log_softmax(op2)
         vals, pidx = probs.topk(self.beamsize*2,0)
         vals = vals.squeeze()
         pidx = pidx.squeeze()
@@ -127,31 +127,7 @@ class model(nn.Module):
     donescores = [x/len(done[i]) for i,x in enumerate(donescores)]
     topscore =  donescores.index(max(donescores))
     return done[topscore]
-
-  def encode(self, inp):
-    encenc = self.encemb(inp)
-    enc,(h,c) = self.enc(encenc)
-
-    #enc hidden has bidirection so switch those to the features dim
-    h = torch.cat([h[0:h.size(0):2], h[1:h.size(0):2]], 2) 
-    c = torch.cat([c[0:c.size(0):2], c[1:c.size(0):2]], 2) 
-    return enc,(h,c)
-    
-  def decode_step(self, prev, op, enc, h, c):
-      dembedding = self.decemb(prev)
-      decin = torch.cat((dembedding.squeeze(1),op),1).unsqueeze(1)
-      decout, (h,c) = self.dec(decin,(h,c))
       
-      #attend on enc 
-      q = self.linin(decout.squeeze(1)).unsqueeze(2)
-      #q = decout.view(decout.size(0),decout.size(2),decout.size(1))
-      w = torch.bmm(enc,q).squeeze(2)
-      w = self.sm(w)
-      cc = torch.bmm(w.unsqueeze(1),enc)
-      op = torch.cat((cc,decout),2)
-      op = self.drop(self.tanh(self.linout(op)))
-      return op, (h, c) 
-
   def forward(self,inp,out=None,val=False):
     encenc = self.encemb(inp)
     enc,(h,c) = self.enc(encenc)
@@ -163,8 +139,6 @@ class model(nn.Module):
     #decode
     op = Variable(torch.cuda.FloatTensor(inp.size(0),self.args.hsz).zero_())
     outputs = []
-    hs = [torch.cat([h[0],h[1]],dim=-1)]
-    prevs = []
     if out is None:
       outp = self.args.maxlen
     else:
@@ -195,11 +169,10 @@ class model(nn.Module):
       op = torch.cat((cc,decout),2)
       op = self.drop(self.tanh(self.linout(op)))
       outputs.append(self.gen(op))
-      prevs.append(prev)
-      hs.append(torch.cat([h[0],h[1]],dim=-1))
 
     outputs = torch.cat(outputs,1)
-    return outputs, hs, prevs
+    return outputs
+
 
 def validate(M,DS,args):
   print(args.valid)
@@ -220,7 +193,7 @@ def validate(M,DS,args):
     refs.append(targets)
   bleu = corpus_bleu(refs,hyps,emulate_multibleu=True,smoothing_function=cc.method3)
   M.train()
-  with open(args.savestr+"hyps_"+args.epoch+"_"+args.modelname+".txt",'w') as f:
+  with open(args.savestr+"hyps"+args.epoch,'w') as f:
     hyps = [' '.join(x) for x in hyps]
     f.write('\n'.join(hyps))
   try:
@@ -243,11 +216,11 @@ def train(M,DS,args,optimizer):
     x = DS.get_batch()
     if not x:
       break
-    (sources,targets), _, _ = x
+    sources,targets = x
     sources = Variable(sources.cuda())
     targets = Variable(targets.cuda())
     M.zero_grad()
-    logits, _, _ = M(sources,targets)
+    logits = M(sources,targets)
     logits = logits.view(-1,logits.size(2))
     targets = targets.view(-1)
 
@@ -260,7 +233,6 @@ def train(M,DS,args,optimizer):
   return sum(trainloss)/len(trainloss)
 
 def main(args):
-  print("in main")
   DS = torch.load(args.datafile)
   if args.debug:
     args.bsz=2
@@ -268,8 +240,6 @@ def main(args):
 
   args.vsz = DS.vsz
   args.svsz = DS.svsz
-  print("source_vocab_size",DS.svsz)
-  print("target_vocab_size",DS.vsz)
   if args.resume:
     M,optimizer = torch.load(args.resume)
     M.enc.flatten_parameters()
@@ -283,7 +253,6 @@ def main(args):
     e=0
   M.endtok = DS.vocab.index("<eos>")
   M.punct = [DS.vocab.index(t) for t in ['.','!','?'] if t in DS.vocab]
-  print("Model")
   print(M)
   print(args.datafile)
   print(args.savestr)
@@ -293,8 +262,7 @@ def main(args):
     print("train loss epoch",epoch,trainloss)
     b = validate(M,DS,args)
     print("valid bleu ",b)
-    if epoch%5==0:
-       torch.save((M,optimizer),args.savestr+args.epoch+"_bleu-"+str(b)+args.modelname+".pt")
+    torch.save((M,optimizer),args.savestr+args.epoch+"_bleu-"+str(b))
 
 if __name__=="__main__":
   args = parseParams()

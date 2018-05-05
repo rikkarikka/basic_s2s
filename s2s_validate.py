@@ -181,7 +181,7 @@ def validate(M,DS,args):
     sources = Variable(sources.cuda(),volatile=True)
     targets = Variable(targets.cuda(),volatile=True)
     M.zero_grad()
-    logits = M(sources,targets,val=True)
+    logits, _, _ = M(sources,targets,val=True)
       
     loss = criterion(logits.view(-1,logits.size(2)),targets.view(-1))
     trainloss.append(loss.data.cpu()[0])

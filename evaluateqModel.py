@@ -20,6 +20,8 @@ def testQmodel(args,epoch=0):
     args.vsz = DS.vsz
     args.svsz = DS.svsz
     print(args.valid)
+    print("source_vocab_size",DS.svsz)
+    print("target_vocab_size",DS.vsz)
     QM, _ = torch.load(args.qevaluate)
     M, _ = torch.load(args.fwdseq2seqModel)
     M.enc.flatten_parameters()

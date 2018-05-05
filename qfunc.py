@@ -40,7 +40,7 @@ class qFunc():
                 temp_pred,_ = predlen.squeeze().topk(1)
                 #for regre - -0.7*abs(goldL-predlen.data[0][0])**2
                 lenscore = val_pred[goldL].data[0]
-                vals[k] = vals[k] + 3*lenscore                
+                vals[k] = vals[k] + 5*lenscore                
             return vals, pidx
     
     def qA2Bfunc(self, QM, M, probs,hx):
@@ -62,7 +62,7 @@ class qFunc():
                 h1 = torch.cat([hx[0],hx[1]],dim=-1)
                 inp = torch.cat([h1,dem.squeeze(0)],dim=-1)
                 predsc = QM(inp)
-                vals[k] = vals[k] - 0.01*predsc
+                vals[k] = vals[k] - 0.1*predsc
             return vals,pidx           
     
     def qKLdivfunc(self, QM, beam, probs):
@@ -70,11 +70,23 @@ class qFunc():
             raise NotImplementedError
         else:
             print("here")
-            asd
             vals, pidx = probs.topk(self.args.beamsize*2,0)
             for k in range(len(pidx)):
-                tempseq = torch.stack(beam,pidx[k]) #evaluate KLdiv of each beam and predicted next word, choose word with lowest KL div 
-                klscore = QM.getKLdiv(tempseq)
+                if beam !=[]:
+                    print(beam)
+                    print(pidx[k].data[0])
+                    print(type(beam))
+                    print(type(pidx[k].data[0]))
+                    beam.append(pidx[k].data[0])
+                    print(beam)
+                    
+                    tempseq = torch.cat(beam) #evaluate KLdiv of each beam and predicted next word, choose word with lowest KL div 
+                    print("done")
+                    print(tempseq)
+                    asd
+                else:
+                    tempseq = pidx[k]
+                klscore = QM.getKLdiv(tempseq.unsqueeze(0))
                 vals[k] = vals[k] + klscore
             return vals, pidx
       

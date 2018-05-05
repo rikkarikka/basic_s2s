@@ -37,6 +37,8 @@ class Beam():
     donescores = []
     for i in range(self.args.maxlen):
       tmp = []
+      if len(beam) == 0:
+        break
       for j in range(len(beam)):
         op, (hx,cx) = M.decode_step(prev[j], ops[j].squeeze(1), enc, h[j], c[j])
         op2 = M.gen(op)
@@ -48,7 +50,7 @@ class Beam():
             if not QM:
                 raise("QModel not defined")
             qf = qFunc(self.args)
-            vals, pidx = qf.scoreqfunc(QM, M, beam, probs, goldL, op, hx, cx)
+            vals, pidx = qf.scoreqfunc(QM, M, beam[j], probs, goldL, op, hx, cx)
         else:
             vals, pidx = probs.topk(self.args.beamsize*2,0)
         vals = vals.squeeze()
