@@ -202,7 +202,6 @@ class model(nn.Module):
     return outputs, hs, prevs
 
 def validate(M,DS,args):
-  print(args.valid)
   data = DS.new_data(args.valid)
   cc = SmoothingFunction()
   M.eval()
@@ -234,6 +233,25 @@ def validate(M,DS,args):
       f.write('\n'.join(refstr))
   return bleu
 
+def val_loss(M,DS,args):
+  data = DS.val_data(args.valid)
+  cc = SmoothingFunction()
+  M.eval()
+  refs = []
+  hyps = []
+  weights = torch.cuda.FloatTensor(args.vsz).fill_(1)
+  weights[0] = 0
+  criterion = nn.CrossEntropyLoss(weights)
+  valloss = []
+  for sources, targets in data:
+    sources = Variable(sources.cuda(),volatile=True)
+    targets = Variable(targets.cuda(),volatile=True)
+    M.zero_grad()
+    logits,_,_ = M(sources,targets,val=True)      
+    loss = criterion(logits.view(-1,logits.size(2)),targets.view(-1))
+    valloss.append(loss.data.cpu()[0])
+  return sum(valloss)/len(valloss)
+
 def train(M,DS,args,optimizer):
   weights = torch.cuda.FloatTensor(args.vsz).fill_(1)
   weights[0] = 0
@@ -250,7 +268,6 @@ def train(M,DS,args,optimizer):
     logits, _, _ = M(sources,targets)
     logits = logits.view(-1,logits.size(2))
     targets = targets.view(-1)
-
     loss = criterion(logits, targets)
     loss.backward()
     trainloss.append(loss.data.cpu()[0])
@@ -285,12 +302,35 @@ def main(args):
   M.punct = [DS.vocab.index(t) for t in ['.','!','?'] if t in DS.vocab]
   print("Model")
   print(M)
+  print("used files Info")
   print(args.datafile)
-  print(args.savestr)
+  print(args.valid)
+  print(args.train)
+  print("model directory:",args.savestr)
+  print("learning rate", args.lr)
+  print("\n")
+  prevvalloss=100000
   for epoch in range(e,args.epochs):
     args.epoch = str(epoch)
     trainloss = train(M,DS,args,optimizer)
     print("train loss epoch",epoch,trainloss)
+    valloss = val_loss(M,DS,args)
+    if epoch == 0:
+        prevvalloss = valloss
+    print("val loss epoch",epoch,valloss)
+    if epoch > args.burninepoch:
+        if valloss > prevvalloss:
+            if optimizer.param_groups[0]['lr'] > args.minlr:
+                optimizer.param_groups[0]['lr'] = (optimizer.param_groups[0]['lr']*1.0) / args.decayrate
+                print("decaying lr to", optimizer.param_groups[0]['lr'])
+            else:
+                print("minlr reached and loss increasing; exiting at epoch", epoch)
+                torch.save((M,optimizer),args.savestr+args.epoch+"_bleu-"+str(b)+args.modelname+".pt")
+                b = validate(M,DS,args)
+                print("valid bleu ",b)
+                break
+    prevvalloss = valloss
+        
     b = validate(M,DS,args)
     print("valid bleu ",b)
     if epoch%5==0:

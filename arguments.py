@@ -22,6 +22,9 @@ def general():
     parser.add_argument('-valid',type=str,default="data/valid.txt")
     parser.add_argument('-cuda',type=s2bool,default=True)
     parser.add_argument('-gpu',type=str,default="0")
+    parser.add_argument('-burninepoch', type=int,default="5",help='num epochs before decaying considered')
+    parser.add_argument('-decayrate', type=int,default="2",help='decay lr by lr/decayrate')
+    parser.add_argument('-minlr', type=float,default="1e-6")
     return parser
 
 def mkdir(args):
@@ -58,7 +61,8 @@ def qMargs():
     parser.add_argument('-qresume', type=str, default="saved_models/bland_opensub/30QM")
     parser.add_argument('-qevaluate', type=str, default="saved_models/bland_opensub/30QM")
     parser.add_argument('-scorewholevocab', type=s2bool, default=False)
-    parser.add_argument('-scoreqfunc', type=s2bool, default=False)  
+    parser.add_argument('-scoreqfunc', type=s2bool, default=False)
+    parser.add_argument('-qlr', type=float, default=0.001, help='initial learning rate [default: 0.001]')
     args = parser.parse_args()
     mkdir(args)
     return args
