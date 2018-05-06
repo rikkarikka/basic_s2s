@@ -38,18 +38,18 @@ def main(args):
         if args.qfntype == "qlen":
             QM = qm.QlenModel(args).cuda()
             Qoptimizer = torch.optim.Adam(QM.parameters(), lr=0.001)
-        elif args.qfntype == "qA2BM":
+        elif args.qfntype == "qA2B":
             QM = qm.QA2BModel(args).cuda()
-            Qoptimizer = torch.optim.Adadelta(QAM.parameters(), lr=.5)
+            Qoptimizer = torch.optim.Adadelta(QM.parameters(), lr=.5)
         elif args.qfntype == "qRVAE":
             QM = qm.RVAEModel(args).cuda()
-            Qoptimizer = torch.optim.Adam(QAM.parameters(), lr=.001)
+            Qoptimizer = torch.optim.Adam(QM.parameters(), lr=.001)
         else:
             raise("unknown qfunctype")
         e=0
 
     print(QM)
-    print(args.qdatafile)
+    print(args.datafile)
     print(args.saveqMstr)    
     print("training qModel")
     trainer = qModelTrainVal(args)

@@ -252,9 +252,11 @@ def val_loss(M,DS,args):
     logits,_,_ = M(sources,targets,val=True)      
     loss = criterion(logits.view(-1,logits.size(2)),targets.view(-1))
     valloss.append(loss.data.cpu()[0])
+  M.train()
   return sum(valloss)/len(valloss)
 
 def train(M,DS,args,optimizer):
+  M.train()
   weights = torch.cuda.FloatTensor(args.vsz).fill_(1)
   weights[0] = 0
   criterion = nn.CrossEntropyLoss(weights)

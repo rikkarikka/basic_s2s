@@ -11,7 +11,7 @@ def general():
     # learning
     parser.add_argument('-layers', type=int, default=2, help='min_freq for vocab [default: 1]') #
     parser.add_argument('-drop', type=float, default=0.3, help='min_freq for vocab [default: 1]') #
-    parser.add_argument('-bsz', type=int, default=256, help='min_freq for vocab [default: 1]') #
+    parser.add_argument('-bsz', type=int, default=128, help='min_freq for vocab [default: 1]') #
     parser.add_argument('-hsz', type=int, default=500, help='min_freq for vocab [default: 1]') #
     parser.add_argument('-maxlen', type=int, default=50, help='min_freq for vocab [default: 1]') #
     parser.add_argument('-lr', type=float, default=0.001, help='initial learning rate [default: 0.001]') #
@@ -27,11 +27,16 @@ def general():
     parser.add_argument('-minlr', type=float,default="1e-6")
     return parser
 
-def mkdir(args):
+def mkdir(args,qMsave=0):
   try:
     os.stat(args.savestr)
   except:
     os.mkdir(args.savestr)
+  if qMsave:
+    try:
+      os.stat(args.saveqMstr)  
+    except:
+      os.mkdir(args.saveqMstr)
 
 def s2s_bland():
     parser = general()
@@ -47,7 +52,6 @@ def s2s_bland():
 def qMargs():
     parser = general()
     parser.add_argument('-datafile', type=str, default="data_opensub/opensub_fwd.pt")
-    parser.add_argument('-qdatafile', type=str, default="data_opensub/opensub_fwd.pt")
     parser.add_argument('-savestr',type=str,default="saved_models/bland_opensub/")
     parser.add_argument('-beamsize', type=int, default=4, help='min_freq for vocab [default: 1]') #
     parser.add_argument('-vmodel',type=str, default=None)    
@@ -65,5 +69,5 @@ def qMargs():
     parser.add_argument('-qfnstoscore', type=str, nargs='*',default=["qlen"])
     parser.add_argument('-qlr', type=float, default=0.001, help='initial learning rate [default: 0.001]')
     args = parser.parse_args()
-    mkdir(args)
+    mkdir(args,1)
     return args

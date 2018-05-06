@@ -108,7 +108,7 @@ class qFunc():
                 if "qlen" in self.args.qfnstoscore:
                     tempscore+=self.qlenfunc(pidx[k], QM, M, probs, goldL, op, hx, cx) * 0.01                
                 if "qA2B" in self.args.qfnstoscore:
-                    tempscore+=self.qA2Bfunc(pidx[k], QM, M, probs,hx) * 0.01                    
+                    tempscore+=self.qA2Bfunc(pidx[k], QM, M, probs,hx) * (-0.01)                    
                 if "qRVAE" in self.args.qfnstoscore:
                     tempscore+=self.qKLdivfunc(pidx[k], QM, beam, probs) * 0.01                
                 vals[k] = vals[k] + tempscore
@@ -308,7 +308,6 @@ class qModelTrainVal():
         trainloss = []
         while True:
             x= DS.get_batch()
-            
             if not x:
                 break
             (sources, targets, sources2),srclen,tgtlen, src2len = x
@@ -355,6 +354,7 @@ class qModelTrainVal():
         raise NotImplementedError
 
     def qKLdivfunc_trainIter(self,QM,DS,Qoptimizer):
+        QM.train()
         weights = torch.cuda.FloatTensor(self.args.vsz).fill_(1)
         weights[0] = 0
         criterion = nn.CrossEntropyLoss(weights)
@@ -373,7 +373,7 @@ class qModelTrainVal():
             loss = criterion(logits, targets) + kld # still need to optimize
             loss.backward()
             trainloss.append(loss.data.cpu()[0])
-            optimizer.step()
+            Qoptimizer.step()
             if len(trainloss)%100==99: print(trainloss[-1])
         return sum(trainloss)/len(trainloss)
     
@@ -388,7 +388,9 @@ class qModelTrainVal():
         M.punct = [DS.vocab.index(t) for t in ['.','!','?'] if t in DS.vocab]
         return M
     
-    def qModelTrainer(self, QM, Qoptimizer, DS):        
+    def qModelTrainer(self, QM, Qoptimizer, DS):    
+        
+        print(self.qfntype)
         if self.qfntype == "qlen":
             M = self.loadseq2seqModel(self.args.fwdseq2seqModel,DS)
             for epoch in range(self.args.qepochs):
