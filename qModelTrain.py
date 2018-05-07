@@ -14,6 +14,7 @@ from qfunc import qModelTrainVal
 from arguments import qMargs
 from qmodelDefs import *
 from s2s_bland import *
+from nltk.translate.bleu_score import SmoothingFunction, corpus_bleu
 
 def main(args):
     # raise errors by checking if proper datafiles assigned. eg. A2B needs 3 file and qlen needs 2 file

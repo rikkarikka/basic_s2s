@@ -106,7 +106,7 @@ class qFunc():
             for k in range(len(pidx)):
                 tempscore = 0
                 if "qlen" in self.args.qfnstoscore:
-                    tempscore+=self.qlenfunc(pidx[k], QM, M, probs, goldL, op, hx, cx) * 0.01                
+                    tempscore+=self.qlenfunc(pidx[k], QM, M, probs, goldL, op, hx, cx) * (-0.01)            
                 if "qA2B" in self.args.qfnstoscore:
                     tempscore+=self.qA2Bfunc(pidx[k], QM, M, probs,hx) * (-0.01)                    
                 if "qRVAE" in self.args.qfnstoscore:

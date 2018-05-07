@@ -13,6 +13,7 @@ from arguments import qMargs
 from qmodelDefs import *
 from s2s_bland import *
 from qfunc import qFunc
+from nltk.translate.bleu_score import SmoothingFunction, corpus_bleu
 
 ## basically validate function from s2s_bland.py
 
